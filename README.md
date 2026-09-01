@@ -19,7 +19,7 @@ Experiments using our matching algorithm found at: https://github.com/AMS-Hippo/
 
 * TBD
 
-### Python files
+### Matching (Python files)
 
 * ```process_trees.py```: utility functions to extract features, build trees, etc.
 * ```fast_match.py```: Matching algorithm
