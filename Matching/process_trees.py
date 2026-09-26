@@ -183,29 +183,33 @@ def build_process_trees(process, min_tree_size=3, max_tree_size=1000000):
     Trees = G.connected_components(mode="weak")
     G.vs['tree'] = Trees.membership
 
+    print('total number of trees:',1+max(Trees.membership)) ## TEMP
+
     ## drop trees of size < min_tree_size and non-tree(s)
     _dct = dict(enumerate(Trees.sizes()))
     G.vs['tree_size'] = [_dct[i] for i in G.vs['tree']]
     roots = np.where(np.array(G.degree(mode='in'))==0)
     non_tree = set(np.array(G.vs['tree'])).difference(set(np.array(G.vs['tree'])[roots]))
-    G.delete_vertices([v for v in G.vs if (v['tree_size']<min_tree_size or v['tree'] in non_tree)])
+    G.delete_vertices([v for v in G.vs if (v['tree_size']<min_tree_size or v['tree_size']>max_tree_size or v['tree'] in non_tree)])
 
     ## re-compute 
     Trees = G.connected_components(mode="weak")
     G.vs['tree'] = Trees.membership
 
+    print('final number of trees:',1+max(Trees.membership)) ## TEMP
+    
     ## build dataframe with (sub)process trees 
     ## keep only trees with some non-empty root process name
     L = []
     for tree in range(len(Trees)):
-        if len(Trees[tree])<=max_tree_size:
+        if (len(Trees[tree])>=min_tree_size) and (len(Trees[tree])<=max_tree_size): ### TEMP
             sg = Trees.subgraph(tree)
             for v in sg.vs:
                 if v['process'] != '' and v['process'] != 'unknown' and sg.degree(v, mode='out')>0: ## pick non-leaf nodes with some process name
                     V, l, p = sg.bfs(v.index)
                     nodes = len(V)
                     splits = sum([x>1 for x in list(Counter(np.array(p)[np.array(p)>=0]).values())])
-                    if nodes<=2: ## subtrees of size 3+ only
+                    if nodes<min_tree_size: ## subtrees of size 3+ only
                         continue
                     leaves = nodes - len(set(np.array(p)[np.array(p)>=0]))
                     layers = len(l)-1
