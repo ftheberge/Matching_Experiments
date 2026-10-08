@@ -3,6 +3,8 @@ import pandas as pd
 import igraph as ig
 from collections import Counter
 from IPython.display import Image
+import matplotlib.pyplot as plt
+import needleman_wunsch_tree as nwt ## slower, more flexibility for scoring functions
 
 def extract_process_trees(process, uid='pid_hash', parent_uid='parent_pid_hash', extra=None, min_tree_size=3, max_tree_size=100):
     """
@@ -117,16 +119,35 @@ def acme_get_bfs_subtree(Trees, tree_id, root_id):
     
     return G
 
+def run_redblack_match(TreeData, _label, weight, dct_label, min_red_nodes=1, verbose=False):
+    best_score = 0
+    for red in np.where(_label==True)[0]:
+        for black in np.where(_label==False)[0]:
+            match = nwt.align_trees_algorithm1(TreeData[red], TreeData[black], w=weight)
+            if match.score > best_score:
+                red_nodes = sum([dct_label[TreeData[red].label[x[0]]] for x in match.path_internal])
+                if red_nodes >= min_red_nodes: 
+                    best_score = match.score
+                    best_pair = (red, black)
+                    if verbose:
+                        print('Best score:',best_score)
+    return best_pair
+
 ## plotting utility function
-def plot_path(sg, path, dct_processname, fn="_temp.png"):
-    sg.vs['vertex_size'] = 2
-    sg.vs['vertex_label_size'] = 1
-    for i in path:
-        sg.vs[i]['vertex_size'] = 1
-        sg.vs[i]['vertex_label_size'] = 20
-    ig.plot(sg, target=fn, bbox=(1000,700), layout=sg.layout_reingold_tilford(), margin=50, 
-            vertex_size=sg.vs['vertex_size'], 
-            vertex_label=[dct_processname.get(x,'') for x in sg.vs['uid']],
-            vertex_label_size=sg.vs['vertex_label_size'], 
-            edge_color='lightgrey', edge_arrow_size=0)    
-    return Image(fn)
+def plot_path(sg, path, margin=[0,0]):
+
+    titles = ["Redteam path","Non-redteam path"]
+    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+    
+    for i in [0,1]:
+        sg[i].vs['label'] = sg[i].vs['process']
+        sg[i].vs['size'] = 1
+        sg[i].vs['label_size'] = 0
+        for j in [x[i] for x in path]:
+            sg[i].vs[j]['size'] = 0
+            sg[i].vs[j]['label_size'] = 15
+        ig.plot(sg[i], target=ax[i], layout=sg[i].layout_reingold_tilford(),
+                edge_color='lightgrey', edge_arrow_size=0)    
+        ax[i].set_title(titles[i], fontsize=18)
+        ax[i].invert_yaxis()
+        ax[i].margins(x=margin[i])
