@@ -121,11 +121,13 @@ def acme_get_bfs_subtree(Trees, tree_id, root_id):
 
 def run_redblack_match(TreeData, _label, weight, dct_label, min_red_nodes=1, verbose=False):
     best_score = 0
+    red_nodes = 1
     for red in np.where(_label==True)[0]:
         for black in np.where(_label==False)[0]:
             match = nwt.align_trees_algorithm1(TreeData[red], TreeData[black], w=weight)
             if match.score > best_score:
-                red_nodes = sum([dct_label[TreeData[red].label[x[0]]] for x in match.path_internal])
+                if min_red_nodes>0:
+                    red_nodes = sum([dct_label[TreeData[red].label[x[0]]] for x in match.path_internal])
                 if red_nodes >= min_red_nodes: 
                     best_score = match.score
                     best_pair = (red, black)
