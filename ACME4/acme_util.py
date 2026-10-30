@@ -153,3 +153,24 @@ def plot_path(sg, path, margin=[0,0]):
         ax[i].set_title(titles[i], fontsize=18)
         ax[i].invert_yaxis()
         ax[i].margins(x=margin[i])
+
+## add motifs as described to a subgraph
+def acme_add_motifs(sg):
+    ## dict of motifs for sg as attribute
+    root = np.where(np.array(sg.degree(mode='in'))==0)[0][0]
+    V, L, P = sg.bfs(root)
+    V.reverse()
+    for v in sg.vs:
+        v['motifs'] = {}
+    for v in V:
+        process = sg.vs[v]['process']
+        parent = P[v]    
+        if len(process)>0 and parent>=0:
+            ## pass own process to parent
+            sg.vs[parent]['motifs'][(process,1)] =   sg.vs[parent]['motifs'].get((process,1),0)+1
+            ## pass own dict, increase the counts
+            for idx, (key,val) in enumerate(sg.vs[v]['motifs'].items()):
+                newkey =(key[0],key[1]+1)
+                sg.vs[parent]['motifs'][newkey] = sg.vs[parent]['motifs'].get(newkey,0)+val
+    return sg
+
